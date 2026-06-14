@@ -1,0 +1,23 @@
+node_modules/
+artifacts/
+cache/
+dist/
+typechain-types/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hardhat artifacts
+deployments/
+
+CLAUDE.md
+TODO.md

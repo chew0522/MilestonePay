@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MilestonePay - Dispute Resolution Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background: radial-gradient(circle at top right, #192029 0%, #0d141d 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-success {
+            box-shadow: 0 0 15px rgba(74, 225, 118, 0.2);
+        }
+        .glow-error {
+            box-shadow: 0 0 15px rgba(255, 180, 171, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "primary-container": "#8083ff",
+                    "outline-variant": "#464554",
+                    "tertiary-fixed": "#6bff8f",
+                    "on-surface-variant": "#c7c4d7",
+                    "surface-container-lowest": "#080f17",
+                    "secondary-fixed": "#e9ddff",
+                    "on-secondary-container": "#c4abff",
+                    "on-tertiary-container": "#003111",
+                    "inverse-primary": "#494bd6",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "tertiary-container": "#00a74b",
+                    "inverse-on-surface": "#2a313b",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "outline": "#908fa0",
+                    "tertiary-fixed-dim": "#4ae176",
+                    "on-secondary-fixed": "#23005c",
+                    "surface-container": "#192029",
+                    "on-error-container": "#ffdad6",
+                    "primary": "#c0c1ff",
+                    "secondary": "#d0bcff",
+                    "on-primary-fixed": "#07006c",
+                    "surface-dim": "#0d141d",
+                    "surface-tint": "#c0c1ff",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "surface-container-highest": "#2e353f",
+                    "error": "#ffb4ab",
+                    "tertiary": "#4ae176",
+                    "secondary-container": "#571bc1",
+                    "on-background": "#dce3f0",
+                    "inverse-surface": "#dce3f0",
+                    "on-primary": "#1000a9",
+                    "on-primary-container": "#0d0096",
+                    "primary-fixed": "#e1e0ff",
+                    "surface": "#0d141d",
+                    "on-tertiary-fixed": "#002109",
+                    "background": "#0d141d",
+                    "surface-container-high": "#232a34",
+                    "on-tertiary": "#003915",
+                    "on-tertiary-fixed-variant": "#005321",
+                    "on-secondary": "#3c0091",
+                    "surface-container-low": "#151c25",
+                    "surface-bright": "#333a44",
+                    "on-surface": "#dce3f0",
+                    "surface-variant": "#2e353f",
+                    "on-error": "#690005"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "xl": "2rem",
+                    "margin-mobile": "16px",
+                    "base": "4px",
+                    "container-max": "1200px",
+                    "xs": "0.25rem",
+                    "md": "1rem",
+                    "lg": "1.5rem",
+                    "sm": "0.5rem"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "mono-md": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mono-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="bg-surface/10 dark:bg-surface/10 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_0_20px_rgba(73,75,214,0.15)]">
+<div class="flex justify-between items-center px-margin-mobile md:px-gutter py-4 w-full max-w-container-max mx-auto">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary tracking-tight">
+                MilestonePay
+            </div>
+<div class="hidden md:flex items-center gap-8 font-body-md text-body-md">
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Projects</a>
+<a class="text-primary dark:text-primary border-b-2 border-primary pb-1" href="#">Admin</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-gradient-to-r from-primary to-secondary text-on-primary font-bold py-2 px-6 rounded-full active:scale-95 transition-transform">
+                    Connect Wallet
+                </button>
+</div>
+</div>
+</nav>
+<main class="max-w-container-max mx-auto px-margin-mobile md:px-gutter py-12">
+<!-- Header Section -->
+<header class="mb-12">
+<h1 class="font-display-lg text-display-lg mb-2 text-primary">Dispute Resolution Center</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                Manual adjudication for smart contract escrow disputes. Review the reasoning provided by both parties and finalize the transaction.
+            </p>
+</header>
+<!-- Stats Overview (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<div class="glass-card p-6 rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant/60 mb-2">ACTIVE DISPUTES</p>
+<div class="flex items-center gap-3">
+<span class="font-headline-lg text-headline-lg text-primary">04</span>
+<span class="material-symbols-outlined text-primary">gavel</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant/60 mb-2">LOCKED VALUE</p>
+<div class="flex items-center gap-3">
+<span class="font-headline-lg text-headline-lg text-tertiary">12.5 ETH</span>
+<span class="material-symbols-outlined text-tertiary">lock</span>
+</div>
+</div>
+<div class="glass-card p-6 rounded-xl">
+<p class="font-label-caps text-label-caps text-on-surface-variant/60 mb-2">AVG. RESOLUTION TIME</p>
+<div class="flex items-center gap-3">
+<span class="font-headline-lg text-headline-lg text-secondary">18h</span>
+<span class="material-symbols-outlined text-secondary">schedule</span>
+</div>
+</div>
+</div>
+<!-- Dispute List -->
+<div class="space-y-6">
+<!-- Project Card #1234 -->
+<div class="glass-card rounded-xl p-8 border-l-4 border-l-primary/30 transition-all hover:bg-white/10">
+<div class="flex flex-col md:flex-row justify-between gap-6">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-4">
+<span class="font-mono-md text-mono-md bg-primary/10 text-primary px-3 py-1 rounded-md">ID #1234</span>
+<span class="flex items-center gap-1 font-label-caps text-label-caps text-error border border-error/30 bg-error/5 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 bg-error rounded-full animate-pulse"></span>
+                                CRITICAL DISPUTE
+                            </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-6">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant/50 mb-2">CLIENT ADDRESS</p>
+<p class="font-mono-md text-mono-md text-on-surface truncate">0x71C765...d8976f</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant/50 mb-2">FREELANCER ADDRESS</p>
+<p class="font-mono-md text-mono-md text-on-surface truncate">0x4bC22a...fE3120</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-white/5 mb-6">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-1">report</span>
+<div>
+<p class="font-body-md text-body-md font-bold text-on-surface mb-1">Milestone #2 disputed (2 ETH)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">"Freelancer says task is done, Client claims bugs."</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center gap-3 md:min-w-[240px]">
+<button class="flex items-center justify-center gap-2 bg-tertiary-container text-on-tertiary-container font-bold py-3 px-6 rounded-lg glow-success hover:bg-tertiary transition-all active:scale-95">
+<span class="material-symbols-outlined">payments</span>
+                            Pay Freelancer
+                        </button>
+<button class="flex items-center justify-center gap-2 bg-error-container text-on-error-container font-bold py-3 px-6 rounded-lg glow-error hover:bg-error hover:text-on-error transition-all active:scale-95">
+<span class="material-symbols-outlined">undo</span>
+                            Refund Client
+                        </button>
+<button class="text-on-surface-variant/60 hover:text-on-surface font-label-caps text-label-caps py-2 transition-colors">
+                            View Project History
+                        </button>
+</div>
+</div>
+</div>
+<!-- Project Card #1235 (Example 2) -->
+<div class="glass-card rounded-xl p-8 border-l-4 border-l-secondary/30 transition-all hover:bg-white/10 opacity-80">
+<div class="flex flex-col md:flex-row justify-between gap-6">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-4">
+<span class="font-mono-md text-mono-md bg-secondary/10 text-secondary px-3 py-1 rounded-md">ID #1235</span>
+<span class="flex items-center gap-1 font-label-caps text-label-caps text-outline border border-outline/30 bg-outline/5 px-2 py-0.5 rounded-full">
+<span class="w-1.5 h-1.5 bg-outline rounded-full"></span>
+                                AWAITING EVIDENCE
+                            </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-6">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant/50 mb-2">CLIENT ADDRESS</p>
+<p class="font-mono-md text-mono-md text-on-surface truncate">0x99D123...a4421b</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant/50 mb-2">FREELANCER ADDRESS</p>
+<p class="font-mono-md text-mono-md text-on-surface truncate">0x12A99c...bB7722</p>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-white/5 mb-6">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-secondary mt-1">description</span>
+<div>
+<p class="font-body-md text-body-md font-bold text-on-surface mb-1">Milestone #1 disputed (0.5 ETH)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">"Client requested change of scope without additional funding. Freelancer halted work."</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center gap-3 md:min-w-[240px]">
+<button class="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-white/10 transition-all active:scale-95">
+<span class="material-symbols-outlined">message</span>
+                            Open Chat
+                        </button>
+<button class="flex items-center justify-center gap-2 bg-white/5 border border-white/10 text-on-surface font-bold py-3 px-6 rounded-lg hover:bg-white/10 transition-all active:scale-95">
+<span class="material-symbols-outlined">visibility</span>
+                            Review Files
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface dark:bg-surface full-width py-12 mt-auto border-t border-white/5">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4 px-margin-mobile md:px-gutter w-full max-w-container-max mx-auto">
+<div class="text-primary font-bold">
+                MilestonePay
+            </div>
+<div class="font-label-caps text-label-caps text-secondary dark:text-secondary">
+                Built with Solidity · Hardhat · React · Tailwind
+            </div>
+<div class="flex gap-6">
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">Docs</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">Security</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">GitHub</a>
+</div>
+</div>
+</footer>
+<!-- Micro-interaction for buttons -->
+<script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.innerText.includes('Pay') || this.innerText.includes('Refund')) {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Processing...';
+                    this.disabled = true;
+                    this.style.opacity = '0.7';
+                    
+                    setTimeout(() => {
+                        this.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Resolved';
+                        this.style.backgroundColor = '#4ae176';
+                        this.style.color = '#002109';
+                        this.style.opacity = '1';
+                        
+                        // Particle effect simulation
+                        const rect = this.getBoundingClientRect();
+                        console.log(`Resolved action at ${rect.top}, ${rect.left}`);
+                    }, 1500);
+                }
+            });
+        });
+    </script>
+</body></html>

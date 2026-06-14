@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Project #1234 | MilestonePay</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(12px);
+        }
+        body {
+            background: radial-gradient(circle at top right, #1a1b4b, #0d141d 40%),
+                        radial-gradient(circle at bottom left, #23005c, #0d141d 40%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-top-color: rgba(255, 255, 255, 0.15);
+        }
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus {
+            border-color: #c0c1ff;
+            box-shadow: 0 0 15px rgba(73, 75, 214, 0.3);
+            outline: none;
+        }
+        .status-glow-green {
+            background: rgba(74, 225, 118, 0.1);
+            border: 1px solid rgba(74, 225, 118, 0.3);
+            color: #6bff8f;
+        }
+        .status-glow-yellow {
+            background: rgba(208, 188, 255, 0.1);
+            border: 1px solid rgba(208, 188, 255, 0.3);
+            color: #d0bcff;
+        }
+        .led-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 8px currentColor;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "primary-container": "#8083ff",
+                    "outline-variant": "#464554",
+                    "tertiary-fixed": "#6bff8f",
+                    "on-surface-variant": "#c7c4d7",
+                    "surface-container-lowest": "#080f17",
+                    "secondary-fixed": "#e9ddff",
+                    "on-secondary-container": "#c4abff",
+                    "on-tertiary-container": "#003111",
+                    "inverse-primary": "#494bd6",
+                    "primary-fixed-dim": "#c0c1ff",
+                    "tertiary-container": "#00a74b",
+                    "inverse-on-surface": "#2a313b",
+                    "on-secondary-fixed-variant": "#5516be",
+                    "outline": "#908fa0",
+                    "tertiary-fixed-dim": "#4ae176",
+                    "on-secondary-fixed": "#23005c",
+                    "surface-container": "#192029",
+                    "on-error-container": "#ffdad6",
+                    "primary": "#c0c1ff",
+                    "secondary": "#d0bcff",
+                    "on-primary-fixed": "#07006c",
+                    "surface-dim": "#0d141d",
+                    "surface-tint": "#c0c1ff",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#d0bcff",
+                    "surface-container-highest": "#2e353f",
+                    "error": "#ffb4ab",
+                    "tertiary": "#4ae176",
+                    "secondary-container": "#571bc1",
+                    "on-background": "#dce3f0",
+                    "inverse-surface": "#dce3f0",
+                    "on-primary": "#1000a9",
+                    "on-primary-container": "#0d0096",
+                    "primary-fixed": "#e1e0ff",
+                    "surface": "#0d141d",
+                    "on-tertiary-fixed": "#002109",
+                    "background": "#0d141d",
+                    "surface-container-high": "#232a34",
+                    "on-tertiary": "#003915",
+                    "on-tertiary-fixed-variant": "#005321",
+                    "on-secondary": "#3c0091",
+                    "surface-container-low": "#151c25",
+                    "surface-bright": "#333a44",
+                    "on-surface": "#dce3f0",
+                    "surface-variant": "#2e353f",
+                    "on-error": "#690005"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "xl": "2rem",
+                    "margin-mobile": "16px",
+                    "base": "4px",
+                    "container-max": "1200px",
+                    "xs": "0.25rem",
+                    "md": "1rem",
+                    "lg": "1.5rem",
+                    "sm": "0.5rem"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "mono-md": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mono-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="text-on-surface flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<nav class="bg-surface/10 dark:bg-surface/10 backdrop-blur-xl docked full-width top-0 sticky z-50 border-b border-white/10 shadow-[0_0_20px_rgba(73,75,214,0.15)]">
+<div class="flex justify-between items-center px-margin-mobile md:px-gutter py-4 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary tracking-tight">MilestonePay</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="font-body-md text-body-md text-primary dark:text-primary border-b-2 border-primary pb-1" href="#">Projects</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors" href="#">Admin</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-label-caps text-label-caps active:scale-95 transition-transform">
+                    Connect Wallet
+                </button>
+<div class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+<img alt="User avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXC2_wc3WNlS8bwJY4e1ezRzyqQ-Ltt8TwZ8v7oPOO0zRdwW_MApKmw4HmcggY5cv0t8B1yi-6SHvLGgMJ9Jm7twU82j4Ow1V9bnWYdQh08uPxKCb39s0fSL687gtd2D0RNuY8xhlEvXeiQdg2Ivd1dOFfCwQBTRhPk4X8fZJROjisPifXsuiCCWRTg_396Op75Gz0qpUkOf82tXlJTZ-JYCrKx0vPVyhrnyf4jgNZFoGupEGgTpKVYKXyNnkqgKi3bJCfkXXoyHOl"/>
+</div>
+</div>
+</div>
+</nav>
+<!-- Content Canvas -->
+<main class="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-gutter py-8 md:py-12">
+<!-- Header & Breadcrumbs -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Project Archive / Active</span>
+</div>
+<div class="flex items-center gap-4">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Project #1234</h1>
+<span class="status-glow-green px-3 py-1 rounded-full text-[10px] font-bold flex items-center">
+<span class="led-dot bg-tertiary"></span>
+                        ACTIVE
+                    </span>
+</div>
+</div>
+<!-- Address Group -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="glass-card p-3 rounded-xl flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] text-on-surface-variant">CLIENT</span>
+<span class="font-mono-md text-mono-md">0x123...45</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+<div class="glass-card p-3 rounded-xl flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="font-label-caps text-[10px] text-on-surface-variant">FREELANCER</span>
+<span class="font-mono-md text-mono-md">0x678...90</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Budget Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<div class="glass-card p-6 rounded-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">account_balance_wallet</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-2">TOTAL BUDGET</h3>
+<p class="font-display-lg text-display-lg text-primary">5.00 <span class="font-mono-md text-2xl">ETH</span></p>
+<div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[100%] shadow-[0_0_8px_#c0c1ff]"></div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">payments</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-2">RELEASED</h3>
+<p class="font-display-lg text-display-lg text-tertiary">2.00 <span class="font-mono-md text-2xl">ETH</span></p>
+<div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-[40%] shadow-[0_0_8px_#4ae176]"></div>
+</div>
+</div>
+<div class="glass-card p-6 rounded-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">hourglass_empty</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-2">REMAINING</h3>
+<p class="font-display-lg text-display-lg text-secondary">3.00 <span class="font-mono-md text-2xl">ETH</span></p>
+<div class="mt-4 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[60%] shadow-[0_0_8px_#d0bcff]"></div>
+</div>
+</div>
+</div>
+<!-- Milestones Section -->
+<section class="glass-card rounded-2xl overflow-hidden mb-12">
+<div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile">Project Milestones</h2>
+<span class="font-body-sm text-body-sm text-on-surface-variant">3 Total Milestones</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-white/5 font-label-caps text-label-caps text-on-surface-variant border-b border-white/10">
+<tr>
+<th class="px-6 py-4">ID</th>
+<th class="px-6 py-4">DESCRIPTION</th>
+<th class="px-6 py-4">VALUE</th>
+<th class="px-6 py-4">STATUS</th>
+<th class="px-6 py-4 text-right">ACTIONS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-white/5">
+<!-- Row 1 -->
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-6 font-mono-md text-on-surface-variant">#1</td>
+<td class="px-6 py-6 font-body-md font-medium">Web Design Phase</td>
+<td class="px-6 py-6 font-mono-md text-primary">1.00 ETH</td>
+<td class="px-6 py-6">
+<span class="status-glow-green px-3 py-1 rounded-full text-[10px] font-bold flex items-center w-fit">
+<span class="led-dot bg-tertiary"></span>
+                                    APPROVED
+                                </span>
+</td>
+<td class="px-6 py-6 text-right">
+<span class="text-on-surface-variant font-label-caps opacity-50 italic">Locked</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-white/5 transition-colors group bg-white/5">
+<td class="px-6 py-6 font-mono-md text-on-surface-variant">#2</td>
+<td class="px-6 py-6 font-body-md font-medium">Frontend Development</td>
+<td class="px-6 py-6 font-mono-md text-primary">2.00 ETH</td>
+<td class="px-6 py-6">
+<span class="status-glow-yellow px-3 py-1 rounded-full text-[10px] font-bold flex items-center w-fit">
+<span class="led-dot bg-secondary"></span>
+                                    COMPLETED
+                                </span>
+</td>
+<td class="px-6 py-6 text-right">
+<div class="flex items-center justify-end gap-3">
+<button class="bg-tertiary/20 hover:bg-tertiary/30 text-tertiary px-4 py-2 rounded-lg font-label-caps text-label-caps transition-all border border-tertiary/20">
+                                        Approve
+                                    </button>
+<button class="bg-error/10 hover:bg-error/20 text-error px-4 py-2 rounded-lg font-label-caps text-label-caps transition-all border border-error/20">
+                                        Reject
+                                    </button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="px-6 py-6 font-mono-md text-on-surface-variant">#3</td>
+<td class="px-6 py-6 font-body-md font-medium">Backend API Integration</td>
+<td class="px-6 py-6 font-mono-md text-primary">2.00 ETH</td>
+<td class="px-6 py-6">
+<span class="bg-white/10 border border-white/20 text-on-surface-variant px-3 py-1 rounded-full text-[10px] font-bold flex items-center w-fit">
+<span class="led-dot bg-on-surface-variant"></span>
+                                    PENDING
+                                </span>
+</td>
+<td class="px-6 py-6 text-right">
+<button class="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg font-label-caps text-label-caps transition-all border border-primary/20">
+                                    Mark Complete
+                                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Dispute Action -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-6 p-8 glass-card rounded-2xl border-error/20">
+<div>
+<h4 class="font-headline-lg-mobile text-headline-lg-mobile mb-2">Need Assistance?</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Raising a dispute will lock the remaining funds and involve a neutral arbiter.</p>
+</div>
+<button class="group flex items-center gap-2 border border-error/50 text-error px-8 py-3 rounded-full font-label-caps text-label-caps hover:bg-error/10 transition-all active:scale-95">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform">report_problem</span>
+                Raise Dispute
+            </button>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface dark:bg-surface full-width py-12 mt-auto border-t border-white/5">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4 px-margin-mobile md:px-gutter w-full max-w-container-max mx-auto">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="text-primary font-bold">MilestonePay</span>
+<span class="font-label-caps text-label-caps text-on-secondary-fixed-variant">Built with Solidity · Hardhat · React · Tailwind</span>
+</div>
+<div class="flex gap-8">
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">Docs</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">Security</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant/60 hover:text-on-surface transition-colors hover:underline" href="#">GitHub</a>
+</div>
+</div>
+</footer>
+<!-- Atmosphere/Interactions Script -->
+<script>
+        // Subtle Mouse parallax for the glass cards
+        document.addEventListener('mousemove', (e) => {
+            const cards = document.querySelectorAll('.glass-card');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            cards.forEach(card => {
+                const rect = card.getBoundingClientRect();
+                const cardX = (rect.left + rect.width / 2) / window.innerWidth;
+                const cardY = (rect.top + rect.height / 2) / window.innerHeight;
+                
+                const moveX = (x - cardX) * 10;
+                const moveY = (y - cardY) * 10;
+                
+                card.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+            });
+        });
+
+        // Copy address interaction
+        document.querySelectorAll('button:has(.material-symbols-outlined:contains("content_copy"))').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const icon = btn.querySelector('.material-symbols-outlined');
+                icon.innerText = 'check';
+                icon.classList.add('text-tertiary');
+                setTimeout(() => {
+                    icon.innerText = 'content_copy';
+                    icon.classList.remove('text-tertiary');
+                }, 2000);
+            });
+        });
+    </script>
+</body></html>
