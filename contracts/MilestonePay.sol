@@ -18,6 +18,7 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         bool isApproved;
         string rejectionReason;
         bool isDisputed;
+        string submissionDetail;
     }
 
     struct Project {
@@ -164,7 +165,8 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
                 isCompleted: false,
                 isApproved: false,
                 rejectionReason: "",
-                isDisputed: false
+                isDisputed: false,
+                submissionDetail: ""
             });
         }
 
@@ -191,9 +193,20 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         emit ProjectClaimed(_projectId, msg.sender);
     }
 
-    /// @notice Freelancer marks a milestone as completed
+    /// @notice Freelancer marks a milestone as completed without details (backwards compatible)
     function completeMilestone(uint _projectId, uint _milestoneId)
         external
+    {
+        completeMilestone(_projectId, _milestoneId, "");
+    }
+
+    /// @notice Freelancer marks a milestone as completed with submission details
+    function completeMilestone(
+        uint _projectId,
+        uint _milestoneId,
+        string memory _submissionDetail
+    )
+        public
         onlyFreelancer(_projectId)
         inState(_projectId, ProjectState.Active)
     {
@@ -203,6 +216,7 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
 
         milestone.isCompleted = true;
         milestone.rejectionReason = ""; // Clear reason on resubmit
+        milestone.submissionDetail = _submissionDetail;
         emit MilestoneCompleted(_projectId, _milestoneId);
     }
 

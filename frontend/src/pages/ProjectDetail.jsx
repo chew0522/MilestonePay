@@ -24,6 +24,8 @@ export default function ProjectDetail() {
   const [auditReportMilestoneId, setAuditReportMilestoneId] = useState(null);
   const [auditPass, setAuditPass] = useState(true);
   const [toast, setToast] = useState(null);
+  const [submitMilestoneId, setSubmitMilestoneId] = useState(null);
+  const [submissionText, setSubmissionText] = useState("");
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -54,7 +56,8 @@ export default function ProjectDetail() {
             isCompleted: m.isCompleted, 
             isApproved: m.isApproved, 
             rejectionReason: m.rejectionReason,
-            isDisputed: m.isDisputed 
+            isDisputed: m.isDisputed,
+            submissionDetail: m.submissionDetail
           });
 
           if (m.isDisputed) {
@@ -339,6 +342,14 @@ export default function ProjectDetail() {
                   <td className="px-6 py-6 font-mono-md text-on-surface-variant">#{m.id + 1}</td>
                   <td className="px-6 py-6 font-medium">
                     <div>{m.desc || `Milestone ${m.id + 1}`}</div>
+                    {m.submissionDetail && (
+                      <div className="mt-2 text-[12px] text-tertiary bg-tertiary/10 border border-tertiary/20 rounded-lg px-3 py-2 flex items-start gap-1.5 max-w-md">
+                        <Icon className="text-[16px] mt-0.5 select-none text-tertiary">check_circle</Icon>
+                        <div>
+                          <span className="font-bold">Submission Proof:</span> {m.submissionDetail}
+                        </div>
+                      </div>
+                    )}
                     {m.rejectionReason && (
                       <div className="mt-2 text-[12px] text-error bg-error/10 border border-error/20 rounded-lg px-3 py-2 flex items-start gap-1.5 max-w-md">
                         <Icon className="text-[16px] mt-0.5 select-none text-error">warning</Icon>
@@ -365,6 +376,10 @@ export default function ProjectDetail() {
                       onRejectClick={(milestoneId) => {
                         setRejectMilestoneId(milestoneId);
                         setRejectReason("");
+                      }}
+                      onSubmitClick={(milestoneId) => {
+                        setSubmitMilestoneId(milestoneId);
+                        setSubmissionText("");
                       }}
                       projectState={project?.state}
                       raiseDispute={raiseDispute}
@@ -679,6 +694,58 @@ export default function ProjectDetail() {
         </div>
       )}
 
+      {/* Submit Milestone Modal */}
+      {submitMilestoneId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-md glass-card rounded-2xl border border-primary/20 overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/5 bg-primary/5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
+                <Icon className="text-xl">publish</Icon>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Submit Milestone #{submitMilestoneId + 1}</h3>
+                <p className="text-[11px] text-on-surface-variant font-medium">Provide proof of work or deliverables</p>
+              </div>
+            </div>
+            <div className="p-6">
+              <label className="block text-[11px] tracking-[0.05em] font-semibold text-on-surface-variant mb-2">
+                DELIVERABLE DETAILS / LINKS
+              </label>
+              <textarea
+                value={submissionText}
+                onChange={(e) => setSubmissionText(e.target.value)}
+                placeholder="e.g. GitHub PR Link, hosting URL, or summary of deliverables..."
+                rows="4"
+                className="w-full glass-input rounded-xl px-4 py-3 text-white placeholder:text-on-surface-variant/30 text-sm focus:border-primary/50 resize-none font-sans"
+              />
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setSubmitMilestoneId(null)}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white font-semibold py-2.5 px-4 rounded-xl border border-white/10 text-sm cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={loading || !submissionText.trim()}
+                  onClick={() => {
+                    doAction(async () => {
+                      await completeMilestone(Number(id), submitMilestoneId, submissionText.trim());
+                      setSubmitMilestoneId(null);
+                      showToast(`Milestone #${submitMilestoneId + 1} submitted successfully!`);
+                    });
+                  }}
+                  className="flex-1 bg-primary hover:bg-primary/80 text-black font-bold py-2.5 px-4 rounded-xl text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-center"
+                >
+                  {loading ? "Submitting..." : "Submit Work"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rejection Feedback Modal */}
       {rejectMilestoneId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -761,7 +828,7 @@ function BudgetCard({ label, value, unit, color, percent, bgColor }) {
   );
 }
 
-function MilestoneActions({ m, isClient, isFreelancer, projectId, loading, doAction, completeMilestone, approveMilestone, onRejectClick, projectState, raiseDispute }) {
+function MilestoneActions({ m, isClient, isFreelancer, projectId, loading, doAction, completeMilestone, approveMilestone, onRejectClick, onSubmitClick, projectState, raiseDispute }) {
   if (projectState !== "Active") {
     if (m.isApproved) {
       return <span className="text-on-surface-variant italic opacity-50">Approved</span>;
@@ -797,7 +864,7 @@ function MilestoneActions({ m, isClient, isFreelancer, projectId, loading, doAct
     if (m.rejectionReason) {
       return (
         <div className="flex items-center justify-end gap-3">
-          <button onClick={() => doAction(() => completeMilestone(projectId, m.id))} disabled={loading}
+          <button onClick={() => onSubmitClick(m.id)} disabled={loading}
             className="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-[12px] font-semibold border border-primary/20 cursor-pointer">Resubmit</button>
           <button onClick={() => doAction(() => raiseDispute(projectId, m.id))} disabled={loading}
             className="bg-error/20 hover:bg-error/30 text-error px-4 py-2 rounded-lg text-[12px] font-semibold border border-error/30 cursor-pointer">Dispute</button>
@@ -805,7 +872,7 @@ function MilestoneActions({ m, isClient, isFreelancer, projectId, loading, doAct
       );
     }
     return (
-      <button onClick={() => doAction(() => completeMilestone(projectId, m.id))} disabled={loading}
+      <button onClick={() => onSubmitClick(m.id)} disabled={loading}
         className="bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-[12px] font-semibold border border-primary/20 cursor-pointer">Mark Complete</button>
     );
   }

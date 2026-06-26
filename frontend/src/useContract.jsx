@@ -64,6 +64,7 @@ export function useContract() {
         isApproved: m.isApproved,
         rejectionReason: m.rejectionReason,
         isDisputed: m.isDisputed,
+        submissionDetail: m.submissionDetail,
       };
     } catch (e) {
       return null;
@@ -87,11 +88,13 @@ export function useContract() {
     }
   }, [contract]);
 
-  const completeMilestone = useCallback(async (projectId, milestoneId) => {
+  const completeMilestone = useCallback(async (projectId, milestoneId, submissionDetail = "") => {
     if (!contract) return;
     setLoading(true);
     try {
-      const tx = await contract.completeMilestone(projectId, milestoneId);
+      const tx = submissionDetail.trim()
+        ? await contract["completeMilestone(uint256,uint256,string)"](projectId, milestoneId, submissionDetail.trim())
+        : await contract["completeMilestone(uint256,uint256)"](projectId, milestoneId);
       await tx.wait();
     } catch (e) {
       console.error("Complete milestone failed:", e);
