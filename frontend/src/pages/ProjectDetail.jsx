@@ -185,7 +185,7 @@ export default function ProjectDetail() {
             blockNumber: Number(ev.blockNumber),
             type: "Cancellation",
             detail: "Project cancelled, funds refunded",
-            amount: "—",
+            amount: `-${p.totalAmount} ETH`,
             status: "Refunded"
           });
         }
@@ -625,6 +625,7 @@ export default function ProjectDetail() {
                         ? "text-on-surface-variant"
                         : (isFreelancer ? "text-tertiary" : "text-error")
                     ) :
+                    h.type === "Cancellation" ? "text-error" :
                     "text-on-surface-variant"
                   }`}>
                     {h.type === "Payout"
