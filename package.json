@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Blockchain-based freelance payment platform with milestone escrow",
   "scripts": {
-    "compile": "hardhat compile",
+    "compile": "hardhat compile && node scripts/copy-abi.js",
     "test": "hardhat test",
     "deploy:local": "hardhat run scripts/deploy.js",
     "node": "hardhat node"

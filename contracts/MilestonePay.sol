@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/access/Ownable.sol"; // so that this contract has an owner 
+import "@openzeppelin/contracts/access/AccessControl.sol"; // role-based access control
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol"; // prevent a specific type of attack 
 
-contract MilestonePay is Ownable, ReentrancyGuard {
+contract MilestonePay is AccessControl, ReentrancyGuard {
+    bytes32 public constant ARBITRATOR_ROLE = keccak256("ARBITRATOR_ROLE");
+    bytes32 public constant TECHNICAL_STAFF_ROLE = keccak256("TECHNICAL_STAFF_ROLE");
     // ============ STATE ============
 
     enum ProjectState { Active, Disputed, Completed, Cancelled } // name state instead of using number 
@@ -14,6 +16,8 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         uint amount;
         bool isCompleted;
         bool isApproved;
+        string rejectionReason;
+        bool isDisputed;
     }
 
     struct Project {
@@ -23,6 +27,9 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         uint milestoneCount;
         uint completedMilestones;
         ProjectState state;
+        uint escrowBalance;
+        string title;
+        string description;
     }
 
     mapping(uint => Project) public projects;
@@ -30,20 +37,59 @@ contract MilestonePay is Ownable, ReentrancyGuard {
     mapping(address => uint[]) public userProjects;
     uint public nextProjectId; // counter 
 
+    address public arbitrator1;
+    address public arbitrator2;
+    address public arbitrator3;
+    uint public accumulatedFees;
+    mapping(uint => uint) public projectArbitratorFees;
+
+    struct TechnicalReview {
+        address staff;
+        string report;
+        bool recommendedPass;
+        bool isSubmitted;
+    }
+
+    mapping(uint => mapping(uint => TechnicalReview)) public milestoneReviews;
+    mapping(uint => mapping(uint => bool)) public reviewRequested;
+    mapping(uint => mapping(uint => bool)) public clientDisputed;
+    mapping(uint => mapping(uint => bool)) public freelancerDisputed;
+
+    // Dispute voting variables on milestone level
+    mapping(uint => mapping(uint => uint)) public payFreelancerVotes;
+    mapping(uint => mapping(uint => uint)) public refundClientVotes;
+    mapping(uint => mapping(uint => mapping(address => bool))) public hasVotedOnDispute;
+
     // ============ EVENTS ============
     // like announcement, eg when project created, milestone approve, fronted update the screen
     event ProjectCreated(uint indexed projectId, address indexed client, address indexed freelancer, uint totalAmount, uint milestoneCount);
+    event ProjectClaimed(uint indexed projectId, address indexed freelancer);
     event MilestoneCompleted(uint indexed projectId, uint indexed milestoneId);
     event MilestoneApproved(uint indexed projectId, uint indexed milestoneId, uint amount);
-    event MilestoneRejected(uint indexed projectId, uint indexed milestoneId);
-    event DisputeRaised(uint indexed projectId);
-    event DisputeResolved(uint indexed projectId, bool refunded);
+    event MilestoneRejected(uint indexed projectId, uint indexed milestoneId, string reason);
+    event DisputeRaised(uint indexed projectId, uint indexed milestoneId);
+    event DisputeResolved(uint indexed projectId, uint indexed milestoneId, bool refunded);
     event ProjectCancelled(uint indexed projectId);
     event FundsDeposited(uint indexed projectId, uint amount);
+    event FeesWithdrawn(uint amount, uint sharePerAdmin);
+    event TechnicalReviewRequested(uint indexed projectId, uint indexed milestoneId, address indexed requester);
+    event TechnicalReviewSubmitted(uint indexed projectId, uint indexed milestoneId, address indexed staff, bool recommendedPass, string report);
+    event DisputeVoteCast(uint indexed projectId, uint indexed milestoneId, address indexed arbitrator, bool payFreelancer);
+    event AuditorFeePaid(uint indexed projectId, uint indexed milestoneId, address indexed auditor, uint amount);
 
     // ============ CONSTRUCTOR ============
 
-    constructor() Ownable(msg.sender) {} // who deploy the contract will become the owner 
+    constructor(address _admin1, address _admin2, address _admin3) {
+        require(_admin1 != address(0) && _admin2 != address(0) && _admin3 != address(0), "Invalid admin address");
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ARBITRATOR_ROLE, _admin1);
+        _grantRole(ARBITRATOR_ROLE, _admin2);
+        _grantRole(ARBITRATOR_ROLE, _admin3);
+
+        arbitrator1 = _admin1;
+        arbitrator2 = _admin2;
+        arbitrator3 = _admin3;
+    }
 
     // ============ MODIFIERS ============
 
@@ -73,12 +119,15 @@ contract MilestonePay is Ownable, ReentrancyGuard {
     /// @notice Client creates a project with milestones and deposits ETH
     function createProject(
         address _freelancer,
+        string calldata _title,
+        string calldata _description,
         uint _milestoneCount,
         string[] calldata _milestoneDescriptions,
         uint[] calldata _milestonePercentages
     ) external payable returns (uint projectId) {
-        require(_freelancer != address(0), "Invalid freelancer address");
-        require(_freelancer != msg.sender, "Cannot be your own freelancer");
+        if (_freelancer != address(0)) {
+            require(_freelancer != msg.sender, "Cannot be your own freelancer");
+        }
         require(_milestoneCount > 0, "Need at least 1 milestone");
         require(_milestoneCount <= 20, "Max 20 milestones");
         require(_milestoneCount == _milestoneDescriptions.length, "Descriptions count mismatch");
@@ -102,6 +151,9 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         project.totalAmount = msg.value;
         project.milestoneCount = _milestoneCount;
         project.state = ProjectState.Active;
+        project.escrowBalance = msg.value;
+        project.title = _title;
+        project.description = _description;
 
         // Create milestones with calculated amounts
         for (uint i = 0; i < _milestoneCount; i++) {
@@ -110,14 +162,33 @@ contract MilestonePay is Ownable, ReentrancyGuard {
                 description: _milestoneDescriptions[i],
                 amount: milestoneAmount,
                 isCompleted: false,
-                isApproved: false
+                isApproved: false,
+                rejectionReason: "",
+                isDisputed: false
             });
         }
 
         userProjects[msg.sender].push(projectId);  // add to client's list 
-        userProjects[_freelancer].push(projectId);  // add to freelancer's list
+        if (_freelancer != address(0)) {
+            userProjects[_freelancer].push(projectId);  // add to freelancer's list
+        }
 
         emit ProjectCreated(projectId, msg.sender, _freelancer, msg.value, _milestoneCount);
+    }
+
+    /// @notice Freelancer claims an open project
+    function claimProject(uint _projectId)
+        external
+        inState(_projectId, ProjectState.Active)
+    {
+        Project storage project = projects[_projectId];
+        require(project.freelancer == address(0), "Project already claimed");
+        require(msg.sender != project.client, "Client cannot be the freelancer");
+
+        project.freelancer = msg.sender;
+        userProjects[msg.sender].push(_projectId); // Add to freelancer's list
+
+        emit ProjectClaimed(_projectId, msg.sender);
     }
 
     /// @notice Freelancer marks a milestone as completed
@@ -131,12 +202,14 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         require(!milestone.isCompleted, "Already completed");
 
         milestone.isCompleted = true;
+        milestone.rejectionReason = ""; // Clear reason on resubmit
         emit MilestoneCompleted(_projectId, _milestoneId);
     }
 
-    /// @notice Client approves a completed milestone and releases payment to freelancer
+    /// @notice Client approves a completed milestone and releases payment to freelancer (3% fee deducted)
     function approveMilestone(uint _projectId, uint _milestoneId)
         external
+        payable
         onlyClient(_projectId)
         inState(_projectId, ProjectState.Active)
         nonReentrant
@@ -147,29 +220,45 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         require(milestone.isCompleted, "Milestone not completed");
         require(!milestone.isApproved, "Already approved");
 
+        uint payment = milestone.amount;
+
+        if (project.escrowBalance < payment) {
+            require(msg.value == payment, "Must deposit milestone funds to approve");
+            project.escrowBalance += msg.value;
+        }
+
         milestone.isApproved = true;
         project.completedMilestones++;
 
-        // Transfer milestone payment to freelancer
-        uint payment = milestone.amount;
-        payable(project.freelancer).transfer(payment);
+        // Calculate and deduct platform fee (3%)
+        uint fee = (payment * 3) / 100;
+        uint netPayment = payment - fee;
+
+        project.escrowBalance -= payment;
+
+        bool hasAudit = milestoneReviews[_projectId][_milestoneId].isSubmitted;
+        if (hasAudit) {
+            address auditor = milestoneReviews[_projectId][_milestoneId].staff;
+            uint auditorFee = (payment * 25) / 10000;
+            projectArbitratorFees[_projectId] += (fee - auditorFee);
+            payable(auditor).transfer(auditorFee);
+            emit AuditorFeePaid(_projectId, _milestoneId, auditor, auditorFee);
+        } else {
+            projectArbitratorFees[_projectId] += fee;
+        }
+
+        payable(project.freelancer).transfer(netPayment);
 
         // Check if all milestones are done
         if (project.completedMilestones == project.milestoneCount) {
-            project.state = ProjectState.Completed;
-
-            // Refund any remaining dust to client
-            uint balance = address(this).balance;
-            if (balance > 0) {
-                payable(project.client).transfer(balance);
-            }
+            _completeProject(_projectId);
         }
 
-        emit MilestoneApproved(_projectId, _milestoneId, payment);
+        emit MilestoneApproved(_projectId, _milestoneId, netPayment);
     }
 
     /// @notice Client rejects a milestone (freelancer needs to redo)
-    function rejectMilestone(uint _projectId, uint _milestoneId)
+    function rejectMilestone(uint _projectId, uint _milestoneId, string calldata _reason)
         external
         onlyClient(_projectId)
         inState(_projectId, ProjectState.Active)
@@ -180,38 +269,133 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         require(!milestone.isApproved, "Already approved");
 
         milestone.isCompleted = false;  // Reset so freelancer can resubmit
-        emit MilestoneRejected(_projectId, _milestoneId);
+        milestone.rejectionReason = _reason;
+        emit MilestoneRejected(_projectId, _milestoneId, _reason);
     }
 
-    /// @notice Either party can raise a dispute
-    function raiseDispute(uint _projectId)
+    /// @notice Either party can raise a dispute on a specific milestone
+    function raiseDispute(uint _projectId, uint _milestoneId)
         external
         onlyProjectParticipant(_projectId)
         inState(_projectId, ProjectState.Active)
     {
-        projects[_projectId].state = ProjectState.Disputed;
-        emit DisputeRaised(_projectId);
+        Project storage project = projects[_projectId];
+        require(_milestoneId < project.milestoneCount, "Invalid milestone");
+        Milestone storage milestone = milestones[_projectId][_milestoneId];
+        require(!milestone.isApproved, "Milestone already approved");
+        require(!milestone.isDisputed, "Milestone already disputed");
+
+        if (msg.sender == project.client) {
+            require(milestone.isCompleted, "Milestone not completed yet");
+            require(!clientDisputed[_projectId][_milestoneId], "Client already disputed this milestone");
+            clientDisputed[_projectId][_milestoneId] = true;
+        } else if (msg.sender == project.freelancer) {
+            require(bytes(milestone.rejectionReason).length > 0, "Milestone must be rejected first");
+            require(!freelancerDisputed[_projectId][_milestoneId], "Freelancer already disputed this milestone");
+            freelancerDisputed[_projectId][_milestoneId] = true;
+        } else {
+            revert("Not a participant");
+        }
+
+        milestone.isDisputed = true;
+        milestone.isCompleted = true; // Ensure completed state during dispute for voting/audit flows
+        emit DisputeRaised(_projectId, _milestoneId);
     }
 
-    /// @notice Owner (admin) resolves a dispute — decides to pay freelancer or refund client
-    function resolveDispute(uint _projectId, bool _payFreelancer)
+    /// @notice Arbitrator votes to resolve a milestone dispute — decision is executed once all 3 vote
+    function resolveDispute(uint _projectId, uint _milestoneId, bool _payFreelancer)
         external
-        onlyOwner
-        inState(_projectId, ProjectState.Disputed)
+        onlyRole(ARBITRATOR_ROLE)
+        inState(_projectId, ProjectState.Active)
         nonReentrant
     {
         Project storage project = projects[_projectId];
-        project.state = ProjectState.Completed;
+        require(_milestoneId < project.milestoneCount, "Invalid milestone");
+        Milestone storage milestone = milestones[_projectId][_milestoneId];
+        require(milestone.isDisputed, "Milestone is not disputed");
+        require(!hasVotedOnDispute[_projectId][_milestoneId][msg.sender], "Already voted on this dispute");
 
-        uint balance = address(this).balance;
+        hasVotedOnDispute[_projectId][_milestoneId][msg.sender] = true;
 
         if (_payFreelancer) {
-            payable(project.freelancer).transfer(balance);
+            payFreelancerVotes[_projectId][_milestoneId]++;
         } else {
-            payable(project.client).transfer(balance);
+            refundClientVotes[_projectId][_milestoneId]++;
         }
 
-        emit DisputeResolved(_projectId, !_payFreelancer);
+        emit DisputeVoteCast(_projectId, _milestoneId, msg.sender, _payFreelancer);
+
+        uint totalVotes = payFreelancerVotes[_projectId][_milestoneId] + refundClientVotes[_projectId][_milestoneId];
+        if (totalVotes == 3) {
+            milestone.isDisputed = false;
+
+            uint milestoneAmount = milestone.amount;
+            project.escrowBalance -= milestoneAmount;
+
+            if (payFreelancerVotes[_projectId][_milestoneId] >= 2) {
+                milestone.isApproved = true;
+                project.completedMilestones++;
+                
+                uint fee = (milestoneAmount * 3) / 100;
+                uint netPayment = milestoneAmount - fee;
+
+                bool hasAudit = milestoneReviews[_projectId][_milestoneId].isSubmitted;
+                if (hasAudit) {
+                    address auditor = milestoneReviews[_projectId][_milestoneId].staff;
+                    uint auditorFee = (milestoneAmount * 25) / 10000;
+                    projectArbitratorFees[_projectId] += (fee - auditorFee);
+                    payable(auditor).transfer(auditorFee);
+                    emit AuditorFeePaid(_projectId, _milestoneId, auditor, auditorFee);
+                } else {
+                    projectArbitratorFees[_projectId] += fee;
+                }
+
+                payable(project.freelancer).transfer(netPayment);
+                emit DisputeResolved(_projectId, _milestoneId, false); // refunded: false
+            } else {
+                milestone.isCompleted = false;
+                milestone.isApproved = false;
+                milestone.rejectionReason = "Dispute resolved: Refunded to client";
+                
+                payable(project.client).transfer(milestoneAmount);
+
+                bool hasAudit = milestoneReviews[_projectId][_milestoneId].isSubmitted;
+                if (hasAudit) {
+                    address auditor = milestoneReviews[_projectId][_milestoneId].staff;
+                    uint auditorFee = (milestoneAmount * 25) / 10000;
+                    if (projectArbitratorFees[_projectId] >= auditorFee) {
+                        projectArbitratorFees[_projectId] -= auditorFee;
+                    } else {
+                        uint deficit = auditorFee - projectArbitratorFees[_projectId];
+                        projectArbitratorFees[_projectId] = 0;
+                        if (accumulatedFees >= deficit) {
+                            accumulatedFees -= deficit;
+                        } else {
+                            accumulatedFees = 0;
+                        }
+                    }
+                    payable(auditor).transfer(auditorFee);
+                    emit AuditorFeePaid(_projectId, _milestoneId, auditor, auditorFee);
+                }
+
+                delete milestoneReviews[_projectId][_milestoneId];
+                reviewRequested[_projectId][_milestoneId] = false;
+
+                emit DisputeResolved(_projectId, _milestoneId, true); // refunded: true
+            }
+
+            // Reset voting state for this milestone
+            payFreelancerVotes[_projectId][_milestoneId] = 0;
+            refundClientVotes[_projectId][_milestoneId] = 0;
+            hasVotedOnDispute[_projectId][_milestoneId][arbitrator1] = false;
+            hasVotedOnDispute[_projectId][_milestoneId][arbitrator2] = false;
+            hasVotedOnDispute[_projectId][_milestoneId][arbitrator3] = false;
+
+            // Check if all milestones are finalized (approved or resolved)
+            if (project.completedMilestones == project.milestoneCount) {
+                _completeProject(_projectId);
+            }
+        }
     }
 
     /// @notice Client can cancel an active project (no milestones completed)
@@ -225,7 +409,9 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         require(project.completedMilestones == 0, "Cannot cancel, milestones completed");
 
         project.state = ProjectState.Cancelled;
-        payable(project.client).transfer(address(this).balance);
+        uint refund = project.escrowBalance;
+        project.escrowBalance = 0;
+        payable(project.client).transfer(refund);
 
         emit ProjectCancelled(_projectId);
     }
@@ -238,7 +424,10 @@ contract MilestonePay is Ownable, ReentrancyGuard {
         uint totalAmount,
         uint milestoneCount,
         uint completedMilestones,
-        ProjectState state
+        ProjectState state,
+        uint escrowBalance,
+        string memory title,
+        string memory description
     ) {
         Project storage project = projects[_projectId];
         return (
@@ -247,7 +436,10 @@ contract MilestonePay is Ownable, ReentrancyGuard {
             project.totalAmount,
             project.milestoneCount,
             project.completedMilestones,
-            project.state
+            project.state,
+            project.escrowBalance,
+            project.title,
+            project.description
         );
     }
 
@@ -257,5 +449,90 @@ contract MilestonePay is Ownable, ReentrancyGuard {
 
     function getProjectCount(address _user) external view returns (uint) {
         return userProjects[_user].length;
+    }
+
+    /// @notice Any arbitrator can call this to trigger withdrawal of their 1/3 share of accumulated fees.
+    function withdrawFees() external onlyRole(ARBITRATOR_ROLE) nonReentrant {
+        uint total = accumulatedFees;
+        require(total > 0, "No fees to withdraw");
+
+        uint share = total / 3;
+        require(share > 0, "Share too small");
+
+        accumulatedFees = total - (share * 3); // Retain any remainder dust in contract
+
+        payable(arbitrator1).transfer(share);
+        payable(arbitrator2).transfer(share);
+        payable(arbitrator3).transfer(share);
+
+        emit FeesWithdrawn(total - accumulatedFees, share);
+    }
+
+    /// @notice Request technical staff to review the disputed milestone
+    function requestTechnicalReview(uint _projectId, uint _milestoneId)
+        external
+        onlyProjectParticipant(_projectId)
+        inState(_projectId, ProjectState.Active)
+    {
+        Project storage project = projects[_projectId];
+        require(_milestoneId < project.milestoneCount, "Invalid milestone");
+        Milestone storage milestone = milestones[_projectId][_milestoneId];
+        require(milestone.isDisputed, "Milestone is not disputed");
+        require(!reviewRequested[_projectId][_milestoneId], "Review already requested");
+
+        reviewRequested[_projectId][_milestoneId] = true;
+        emit TechnicalReviewRequested(_projectId, _milestoneId, msg.sender);
+    }
+
+    /// @notice Technical staff submits their audit report and recommendation on the milestone
+    function submitAuditReport(
+        uint _projectId,
+        uint _milestoneId,
+        string calldata _report,
+        bool _recommendedPass
+    )
+        external
+        onlyRole(TECHNICAL_STAFF_ROLE)
+        inState(_projectId, ProjectState.Active)
+    {
+        Project storage project = projects[_projectId];
+        require(_milestoneId < project.milestoneCount, "Invalid milestone");
+        Milestone storage milestone = milestones[_projectId][_milestoneId];
+        require(milestone.isDisputed, "Milestone is not disputed");
+        require(reviewRequested[_projectId][_milestoneId], "Review not requested");
+        require(!milestoneReviews[_projectId][_milestoneId].isSubmitted, "Review already submitted");
+
+        milestoneReviews[_projectId][_milestoneId] = TechnicalReview({
+            staff: msg.sender,
+            report: _report,
+            recommendedPass: _recommendedPass,
+            isSubmitted: true
+        });
+
+        emit TechnicalReviewSubmitted(_projectId, _milestoneId, msg.sender, _recommendedPass, _report);
+    }
+
+    function _completeProject(uint _projectId) private {
+        Project storage project = projects[_projectId];
+        project.state = ProjectState.Completed;
+
+        // Refund any remaining dust to client
+        uint refund = project.escrowBalance;
+        project.escrowBalance = 0;
+        if (refund > 0) {
+            payable(project.client).transfer(refund);
+        }
+
+        // Distribute project arbitrator fees to the 3 arbitrators
+        uint totalProjFee = projectArbitratorFees[_projectId];
+        projectArbitratorFees[_projectId] = 0;
+        uint share = totalProjFee / 3;
+        if (share > 0) {
+            payable(arbitrator1).transfer(share);
+            payable(arbitrator2).transfer(share);
+            payable(arbitrator3).transfer(share);
+            // Any remainder dust goes to global accumulatedFees
+            accumulatedFees += (totalProjFee - (share * 3));
+        }
     }
 }

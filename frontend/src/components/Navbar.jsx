@@ -1,15 +1,52 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useWallet } from "../WalletContext";
+import { useContract } from "../useContract";
 
 export default function Navbar() {
   const location = useLocation();
   const { account, isConnecting, connect, disconnect } = useWallet();
+  const { contract } = useContract();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isTechStaff, setIsTechStaff] = useState(false);
+
+  useEffect(() => {
+    async function checkRoles() {
+      if (contract && account) {
+        try {
+          const roleHash = await contract.ARBITRATOR_ROLE();
+          const hasRole = await contract.hasRole(roleHash, account);
+          setIsAdmin(hasRole);
+
+          const techRoleHash = await contract.TECHNICAL_STAFF_ROLE();
+          const hasTechRole = await contract.hasRole(techRoleHash, account);
+          setIsTechStaff(hasTechRole);
+        } catch (e) {
+          console.error("Failed to check roles:", e);
+          setIsAdmin(false);
+          setIsTechStaff(false);
+        }
+      } else {
+        setIsAdmin(false);
+        setIsTechStaff(false);
+      }
+    }
+    checkRoles();
+  }, [contract, account]);
 
   const links = [
     { to: "/", label: "Dashboard" },
-    { to: "/projects", label: "Projects" },
-    { to: "/admin", label: "Admin" },
   ];
+
+  if (!isAdmin && !isTechStaff) {
+    links.push({ to: "/projects", label: "Marketplace" });
+  }
+
+  links.push({ to: "/completed", label: "History" });
+
+  if (isAdmin || isTechStaff) {
+    links.push({ to: "/admin", label: "Admin" });
+  }
 
   return (
     <nav className="bg-surface/10 backdrop-blur-xl top-0 sticky z-50 border-b border-white/10 shadow-[0_0_20px_rgba(73,75,214,0.15)]">

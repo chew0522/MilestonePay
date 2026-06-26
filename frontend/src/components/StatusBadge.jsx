@@ -5,6 +5,7 @@ export default function StatusBadge({ label, variant = "active" }) {
     disputed: "bg-error/10 border-error/20 text-error",
     pending: "bg-white/10 border-white/20 text-on-surface-variant",
     approved: "status-glow-green",
+    rejected: "bg-error/15 border-error/30 text-error",
   };
 
   return (

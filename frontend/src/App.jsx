@@ -6,6 +6,7 @@ import CreateProject from "./pages/CreateProject";
 import ProjectDetail from "./pages/ProjectDetail";
 import ProjectsList from "./pages/ProjectsList";
 import AdminDispute from "./pages/AdminDispute";
+import CompletedProjects from "./pages/CompletedProjects";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/projects/new" element={<CreateProject />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/admin" element={<AdminDispute />} />
+          <Route path="/completed" element={<CompletedProjects />} />
         </Routes>
         <Footer />
       </div>
