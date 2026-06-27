@@ -47,6 +47,8 @@ export function useContract() {
         escrowBalance: ethers.formatEther(p.escrowBalance),
         title: p.title,
         description: p.description,
+        createdAt: Number(p.createdAt),
+        deadline: Number(p.deadline),
       };
     } catch (e) {
       return null;
@@ -71,13 +73,21 @@ export function useContract() {
     }
   }, [contract]);
 
-  const createProject = useCallback(async (freelancer, title, description, count, descriptions, percentages, valueEth) => {
+  const createProject = useCallback(async (freelancer, title, description, count, descriptions, percentages, valueEth, deadline = 0) => {
     if (!contract) return;
     setLoading(true);
     try {
-      const tx = await contract.createProject(freelancer, title, description, count, descriptions, percentages, {
-        value: ethers.parseEther(valueEth),
-      });
+      const tx = deadline > 0
+        ? await contract.createProjectWithDeadline(
+            freelancer, title, description, count, descriptions, percentages, deadline, {
+              value: ethers.parseEther(valueEth),
+            }
+          )
+        : await contract.createProject(
+            freelancer, title, description, count, descriptions, percentages, {
+              value: ethers.parseEther(valueEth),
+            }
+          );
       await tx.wait();
       return tx;
     } catch (e) {

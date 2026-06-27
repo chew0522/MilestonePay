@@ -20,6 +20,7 @@ export default function CreateProject() {
   const navigate = useNavigate();
   const [toast, setToast] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [deadlineDate, setDeadlineDate] = useState("");
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -42,6 +43,26 @@ export default function CreateProject() {
       while (newDesc.length < count) newDesc.push("");
       return newDesc.slice(0, count);
     });
+  };
+
+  const handleAddMilestone = () => {
+    if (milestoneCount >= 20) {
+      showToast("Maximum of 20 milestones reached.", "error");
+      return;
+    }
+    setMilestoneCount((prev) => prev + 1);
+    setPercentages((prev) => [...prev, 0]);
+    setDescriptions((prev) => [...prev, ""]);
+  };
+
+  const handleDeleteMilestone = (idx) => {
+    if (milestoneCount <= 1) {
+      showToast("You must have at least 1 milestone.", "error");
+      return;
+    }
+    setMilestoneCount((prev) => prev - 1);
+    setPercentages((prev) => prev.filter((_, i) => i !== idx));
+    setDescriptions((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleAiGenerate = async () => {
@@ -141,12 +162,22 @@ Example JSON output structure:
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !description.trim() || !deposit || totalPct !== 100) return;
+
+    const deadlineTimestamp = deadlineDate
+      ? Math.floor(new Date(deadlineDate).getTime() / 1000)
+      : 0;
+
+    if (deadlineTimestamp > 0 && deadlineTimestamp <= Math.floor(Date.now() / 1000)) {
+      showToast("Deadline must be in the future.", "error");
+      return;
+    }
+
     setTxPending(true);
     try {
       const freelancerAddress = freelancer.trim() === "" 
         ? "0x0000000000000000000000000000000000000000" 
         : freelancer.trim();
-      await createProject(freelancerAddress, title.trim(), description.trim(), milestoneCount, descriptions, percentages, deposit);
+      await createProject(freelancerAddress, title.trim(), description.trim(), milestoneCount, descriptions, percentages, deposit, deadlineTimestamp);
       navigate("/");
     } catch (err) {
       showToast("Transaction failed or was rejected.", "error");
@@ -187,10 +218,16 @@ Example JSON output structure:
                 placeholder="Describe the scope of work for this contract..." rows="3" value={description} onChange={(e) => setDescription(e.target.value)} required />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[12px] leading-[16px] tracking-[0.05em] font-semibold text-on-surface-variant">Project Deadline</label>
+              <input className="glass-input w-full rounded-lg px-4 py-3 text-white placeholder:text-on-surface-variant/30 [color-scheme:dark]"
+                type="date" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} required />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[12px] leading-[16px] tracking-[0.05em] font-semibold text-on-surface-variant">Number of Milestones</label>
-                <input className="glass-input w-full rounded-lg px-4 py-3" type="number" min="1" max="20" value={milestoneCount} onChange={handleCountChange} />
+                <input className="glass-input w-full rounded-lg px-4 py-3 opacity-60 cursor-not-allowed" type="number" value={milestoneCount} disabled />
               </div>
               <div className="space-y-2">
                 <label className="text-[12px] leading-[16px] tracking-[0.05em] font-semibold text-on-surface-variant">Total Deposit (ETH)</label>
@@ -229,23 +266,40 @@ Example JSON output structure:
               </div>
               <div className="space-y-3">
                 {Array.from({ length: milestoneCount }).map((_, i) => (
-                  <div key={i} className="flex gap-4 items-center">
+                  <div key={i} className="flex gap-4 items-center animate-fade-in">
                     <div className="flex-grow">
                       <input className="glass-input w-full rounded-lg px-4 py-3 text-sm text-white"
-                        placeholder={`Description`} type="text"
+                        placeholder={`Milestone #${i + 1} Description`} type="text"
                         value={descriptions[i] || ""} onChange={(e) => {
                           const d = [...descriptions]; d[i] = e.target.value; setDescriptions(d);
-                        }} />
+                        }} required />
                     </div>
                     <div className="w-24 relative">
                       <input className="glass-input w-full rounded-lg px-3 py-3 text-sm text-white text-right"
                         placeholder="%" type="number" value={percentages[i] || 0} onChange={(e) => {
                           const p = [...percentages]; p[i] = parseInt(e.target.value) || 0; setPercentages(p);
-                        }} />
+                        }} required />
                       <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-on-surface-variant/40">%</span>
                     </div>
+                    {milestoneCount > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMilestone(i)}
+                        className="p-3 bg-error/10 hover:bg-error/20 border border-error/25 hover:border-error/50 text-error rounded-lg flex items-center justify-center transition-all cursor-pointer"
+                        title="Delete Milestone"
+                      >
+                        <Icon className="text-sm">close</Icon>
+                      </button>
+                    )}
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={handleAddMilestone}
+                  className="w-full py-3 mt-2 rounded-lg border border-dashed border-white/20 hover:border-primary/50 text-on-surface-variant hover:text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer bg-white/5 hover:bg-white/10"
+                >
+                  <Icon className="text-sm">add</Icon> Add Milestone
+                </button>
               </div>
             </div>
 

@@ -34,6 +34,33 @@ export default function ProjectDetail() {
     }, 4000);
   };
 
+  const formatDate = (timestamp) => {
+    if (!timestamp || timestamp === 0) return "Not Set";
+    return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getDeadlineText = (deadline) => {
+    if (!deadline || deadline === 0) return "Not Set";
+    const now = Math.floor(Date.now() / 1000);
+    const diff = deadline - now;
+    if (diff <= 0) {
+      return "Overdue";
+    }
+    const days = Math.floor(diff / 86400);
+    if (days > 0) {
+      return `${days} days left`;
+    }
+    const hours = Math.floor(diff / 3600);
+    if (hours > 0) {
+      return `${hours} hours left`;
+    }
+    return "Less than an hour left";
+  };
+
   useEffect(() => {
     async function load() {
       if (!contract) return;
@@ -289,7 +316,7 @@ export default function ProjectDetail() {
             <StatusBadge label={project.state.toUpperCase()} variant={project.state.toLowerCase()} />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="glass-card p-3 rounded-xl">
             <span className="text-[10px] tracking-[0.05em] font-semibold text-on-surface-variant">CLIENT</span>
             <p className="font-mono-md">{project.client.slice(0, 6)}...{project.client.slice(-4)}</p>
@@ -301,6 +328,25 @@ export default function ProjectDetail() {
                 ? "Unassigned"
                 : `${project.freelancer.slice(0, 6)}...${project.freelancer.slice(-4)}`}
             </p>
+          </div>
+          <div className="glass-card p-3 rounded-xl">
+            <span className="text-[10px] tracking-[0.05em] font-semibold text-on-surface-variant">DATE CREATED</span>
+            <p className="font-sans text-sm font-semibold text-white mt-1">{formatDate(project.createdAt)}</p>
+          </div>
+          <div className="glass-card p-3 rounded-xl flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] tracking-[0.05em] font-semibold text-on-surface-variant">DEADLINE</span>
+              {project.deadline > 0 && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  project.deadline < Math.floor(Date.now() / 1000) 
+                    ? "bg-error/20 text-error border border-error/20" 
+                    : "bg-tertiary/20 text-tertiary border border-tertiary/20"
+                }`}>
+                  {getDeadlineText(project.deadline).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <p className="font-sans text-sm font-semibold text-white mt-1">{formatDate(project.deadline)}</p>
           </div>
         </div>
       </div>
@@ -670,7 +716,7 @@ export default function ProjectDetail() {
       </section>
 
       {/* Danger Zone */}
-      {isClient && project.state === "Active" && project.completedMilestones === 0 && (
+      {isClient && project.state === "Active" && (project.completedMilestones === 0 || (project.deadline > 0 && Math.floor(Date.now() / 1000) > project.deadline)) && (
         <div className="glass-card p-6 rounded-2xl border border-error/25 flex flex-col md:flex-row items-center justify-between gap-6 mb-12 animate-fade-in bg-error/5">
           <div className="flex-1 text-center md:text-left">
             <h4 className="text-lg font-bold text-error flex items-center gap-2 justify-center md:justify-start">

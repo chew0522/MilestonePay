@@ -31,6 +31,8 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         uint escrowBalance;
         string title;
         string description;
+        uint createdAt;
+        uint deadline;
     }
 
     mapping(uint => Project) public projects;
@@ -70,7 +72,7 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
     event MilestoneRejected(uint indexed projectId, uint indexed milestoneId, string reason);
     event DisputeRaised(uint indexed projectId, uint indexed milestoneId);
     event DisputeResolved(uint indexed projectId, uint indexed milestoneId, bool refunded);
-    event ProjectCancelled(uint indexed projectId);
+    event ProjectCancelled(uint indexed projectId, uint clientRefund, uint freelancerPayout);
     event FundsDeposited(uint indexed projectId, uint amount);
     event FeesWithdrawn(uint amount, uint sharePerAdmin);
     event TechnicalReviewRequested(uint indexed projectId, uint indexed milestoneId, address indexed requester);
@@ -117,7 +119,7 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
 
     // ============ FUNCTIONS ============
 
-    /// @notice Client creates a project with milestones and deposits ETH
+    /// @notice Client creates a project with milestones and deposits ETH (default 30 days deadline)
     function createProject(
         address _freelancer,
         string calldata _title,
@@ -126,6 +128,48 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         string[] calldata _milestoneDescriptions,
         uint[] calldata _milestonePercentages
     ) external payable returns (uint projectId) {
+        return _createProjectInternal(
+            _freelancer,
+            _title,
+            _description,
+            _milestoneCount,
+            _milestoneDescriptions,
+            _milestonePercentages,
+            block.timestamp + 30 days
+        );
+    }
+
+    /// @notice Client creates a project with milestones, custom deadline, and deposits ETH
+    function createProjectWithDeadline(
+        address _freelancer,
+        string calldata _title,
+        string calldata _description,
+        uint _milestoneCount,
+        string[] calldata _milestoneDescriptions,
+        uint[] calldata _milestonePercentages,
+        uint _deadline
+    ) external payable returns (uint projectId) {
+        require(_deadline > block.timestamp, "Deadline must be in the future");
+        return _createProjectInternal(
+            _freelancer,
+            _title,
+            _description,
+            _milestoneCount,
+            _milestoneDescriptions,
+            _milestonePercentages,
+            _deadline
+        );
+    }
+
+    function _createProjectInternal(
+        address _freelancer,
+        string calldata _title,
+        string calldata _description,
+        uint _milestoneCount,
+        string[] calldata _milestoneDescriptions,
+        uint[] calldata _milestonePercentages,
+        uint _deadline
+    ) internal returns (uint projectId) {
         if (_freelancer != address(0)) {
             require(_freelancer != msg.sender, "Cannot be your own freelancer");
         }
@@ -155,6 +199,8 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         project.escrowBalance = msg.value;
         project.title = _title;
         project.description = _description;
+        project.createdAt = block.timestamp;
+        project.deadline = _deadline;
 
         // Create milestones with calculated amounts
         for (uint i = 0; i < _milestoneCount; i++) {
@@ -412,7 +458,7 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         }
     }
 
-    /// @notice Client can cancel an active project (no milestones completed)
+    /// @notice Client can cancel an active project (no milestones completed, or deadline has passed with no active disputes)
     function cancelProject(uint _projectId)
         external
         onlyClient(_projectId)
@@ -420,14 +466,23 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         nonReentrant
     {
         Project storage project = projects[_projectId];
-        require(project.completedMilestones == 0, "Cannot cancel, milestones completed");
+        
+        // Ensure no milestones are disputed
+        for (uint i = 0; i < project.milestoneCount; i++) {
+            require(!milestones[_projectId][i].isDisputed, "Cannot cancel: milestone is disputed");
+        }
+
+        // If any milestone has been approved, ensure the deadline has passed
+        if (project.completedMilestones > 0) {
+            require(block.timestamp > project.deadline, "Deadline has not passed");
+        }
 
         project.state = ProjectState.Cancelled;
         uint refund = project.escrowBalance;
         project.escrowBalance = 0;
         payable(project.client).transfer(refund);
 
-        emit ProjectCancelled(_projectId);
+        emit ProjectCancelled(_projectId, refund, 0);
     }
 
     // ============ VIEW FUNCTIONS ============
@@ -441,7 +496,9 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
         ProjectState state,
         uint escrowBalance,
         string memory title,
-        string memory description
+        string memory description,
+        uint createdAt,
+        uint deadline
     ) {
         Project storage project = projects[_projectId];
         return (
@@ -453,7 +510,9 @@ contract MilestonePay is AccessControl, ReentrancyGuard {
             project.state,
             project.escrowBalance,
             project.title,
-            project.description
+            project.description,
+            project.createdAt,
+            project.deadline
         );
     }
 
