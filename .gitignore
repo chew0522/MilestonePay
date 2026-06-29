@@ -23,5 +23,13 @@ CLAUDE.md
 TODO.md
 demo_projects.md
 code_walkthrough.md
+video_demo_checklist.md
+
+# Project Documentation and Scripts
+md/
+generate_canva_slides.py
+slides_query.txt
+CNS4504 Group Project.pdf
+
 
 
